@@ -1,0 +1,29 @@
+version: '2'
+services:
+  liquidsoap-full:
+    image: savonet/liquidsoap-full
+    depends_on:
+      - icecast
+    links:
+      - 'icecast'
+      - 'nginx'
+  icecast:
+    image: infiniteproject/icecast
+  nginx:
+    image: nginx
+    depends_on:
+      - php
+    links:
+      - 'php:php-fpm'
+    ports:
+      - '80:80'
+      - '443:443'
+  php:
+    image: php
+    depends_on:
+      - mysql-server
+    links:
+      - 'liquidsoap-full:liquidsoap'
+      - 'mysql-server:mysql'
+  mysql-server:
+    image: mysql/mysql-server

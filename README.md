@@ -1,2 +1,3 @@
 # shoutz0r-docker
-Docker container for Shoutz0r
+
+This repo contains a docker-compose.yml that can be used to quickly deploy shoutzor in a dockerized setup
