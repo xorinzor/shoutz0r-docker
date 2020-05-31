@@ -1,29 +1,93 @@
-version: '2'
+version: '3'
 services:
   liquidsoap-full:
     image: savonet/liquidsoap-full
     depends_on:
       - icecast
-    links:
-      - 'icecast'
-      - 'nginx'
+    networks:
+      - backend
+    volumes:
+      - shoutzor-player:/home/liquidsoap/
+    deploy:
+      restart_policy:
+        condition: on-failure
+
   icecast:
     image: infiniteproject/icecast
+    ports:
+      - '8000:8000'
+    networks:
+      - frontend
+      - backend
+    environment:
+      - ICECAST_SOURCE_PASSWORD=changeme
+      - ICECAST_RELAY_PASSWORD=changeme
+      - ICECAST_ADMIN_PASSWORD=changeme
+      - ICECAST_ADMIN_USERNAME=admin
+      - ICECAST_ADMIN_EMAIL=noreply@example.org
+      - ICECAST_LOCATION=the internet
+      - ICECAST_HOSTNAME=shoutzor.lan
+      - ICECAST_MAX_CLIENTS=9001
+      - ICECAST_MAX_SOURCES=100
+    deploy:
+      restart_policy:
+        condition: on-failure
+
   nginx:
     image: nginx
     depends_on:
-      - php
-    links:
-      - 'php:php-fpm'
+      - 'php'
     ports:
       - '80:80'
-      - '443:443'
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - shoutzor-website:/usr/share/nginx/html:ro
+    environment:
+      - NGINX_HOST=shoutzor.lan
+      - NGINX_PORT=80
+    deploy:
+      restart_policy:
+        condition: on-failure
+
   php:
     image: php
+    entrypoint: ["ls", "/usr/bin/"]
     depends_on:
-      - mysql-server
-    links:
-      - 'liquidsoap-full:liquidsoap'
-      - 'mysql-server:mysql'
+      - 'liquidsoap-full'
+      - 'mysql-server'
+    networks:
+      - backend
+      - db
+    volumes:
+      - shoutzor-website:/usr/src/myapp
+    deploy:
+      restart_policy:
+        condition: on-failure
+
   mysql-server:
     image: mysql/mysql-server
+    networks:
+      db:
+        aliases:
+          - mysql
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=false
+      - MYSQL_ROOT_PASSWORD=changeme
+      - MYSQL_DATABASE=shoutzor
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+networks:
+  frontend:
+  backend:
+  db:
+
+volumes:
+  db-data:
+  shoutzor-website:
+  shoutzor-player:
