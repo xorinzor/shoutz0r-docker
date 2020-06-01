@@ -1,13 +1,28 @@
 version: '3'
 services:
-  liquidsoap-full:
+  player-shoutzor:
     image: savonet/liquidsoap-full
+    entrypoint: ["liquidsoap", "/home/liquidsoap/shoutzor.liq"]
+    depends_on:
+      - player-wrapper
+      - nginx
+    networks:
+      - backend
+    volumes:
+      - ./player:/home/liquidsoap
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  player-wrapper:
+    image: savonet/liquidsoap-full
+    entrypoint: ["liquidsoap", "/home/liquidsoap/wrapper.liq"]
     depends_on:
       - icecast
     networks:
       - backend
     volumes:
-      - shoutzor-player:/home/liquidsoap/
+      - ./player:/home/liquidsoap
     deploy:
       restart_policy:
         condition: on-failure
@@ -43,7 +58,7 @@ services:
       - frontend
       - backend
     volumes:
-      - shoutzor-website:/usr/share/nginx/html:ro
+      - ./www:/usr/share/nginx/html:ro
     environment:
       - NGINX_HOST=shoutzor.lan
       - NGINX_PORT=80
@@ -53,25 +68,22 @@ services:
 
   php:
     image: php
-    entrypoint: ["ls", "/usr/bin/"]
+    entrypoint: ["php-fpm"]
     depends_on:
-      - 'liquidsoap-full'
-      - 'mysql-server'
+      - 'mysql'
     networks:
       - backend
       - db
     volumes:
-      - shoutzor-website:/usr/src/myapp
+      - ./www:/usr/src/myapp
     deploy:
       restart_policy:
         condition: on-failure
 
-  mysql-server:
+  mysql:
     image: mysql/mysql-server
     networks:
-      db:
-        aliases:
-          - mysql
+      - db
     volumes:
       - db-data:/var/lib/mysql
     environment:
@@ -89,5 +101,3 @@ networks:
 
 volumes:
   db-data:
-  shoutzor-website:
-  shoutzor-player:
