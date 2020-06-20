@@ -1,7 +1,4 @@
-#For whatever reason debian 10 gives a lot of problems when compiling liquidsoap via opam
 FROM debian:10
-
-RUN useradd -m liquidsoap
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,7 +9,13 @@ RUN apt update && \
 	apt-transport-https \
 	curl \
 	wget \
-	dirmngr
+	dirmngr \
+	sudo
+
+# Create the liquidsoap user and add it to the sudoers group
+RUN useradd -m liquidsoap && \
+	adduser liquidsoap sudo && \
+	echo 'liquidsoap	ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Copy the new sources.list to make use of the "buster" repositories instead of "stretch"
 COPY sources.list /etc/apt/sources.list
@@ -23,19 +26,21 @@ RUN apt update && \
 	apt install -y \
 	opam
 
-ENV OPAMYES=1
-
-RUN	opam init --disable-sandboxing && \
-	opam switch create 4.10.0 && \
-	opam update && \
-	opam depext alsa ao bjack camlimages cry dssi faad fdkaac ffmpeg flac frei0r gavl gd graphics gstreamer ladspa lame lo mad magic ogg opus portaudio pulseaudio samplerate shine soundtouch ssl taglib theora vorbis xmlplaylist yojson liquidsoap
-
 #Switch to liquidsoap user
 USER liquidsoap
 
+ENV OPAMYES=1
+
+#Create the opam environment and install required packages
 RUN opam init  --disable-sandboxing && \
 	opam switch create 4.10.0 && \
+	opam depext alsa ao bjack camlimages cry dssi faad fdkaac ffmpeg flac frei0r gavl gd graphics gstreamer ladspa lame lo mad magic ogg opus portaudio pulseaudio samplerate shine soundtouch ssl taglib theora vorbis xmlplaylist yojson liquidsoap && \
 	opam install -y alsa ao bjack camlimages cry dssi faad fdkaac ffmpeg flac frei0r gavl gd graphics gstreamer ladspa lame lo mad magic ogg opus portaudio pulseaudio samplerate shine soundtouch ssl taglib theora vorbis xmlplaylist yojson liquidsoap
+
+RUN sudo apt install -y \
+	gstreamer1.0-plugins-good \
+	gstreamer1.0-plugins-base \
+	gstreamer1.0-plugins-bad
 
 RUN eval $(opam config env)
 
