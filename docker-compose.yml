@@ -2,9 +2,6 @@ version: '3'
 services:
   player-shoutzor:
     build: .
-    entrypoint:
-      - liquidsoap
-      - /home/liquidsoap/app/shoutzor.liq
     depends_on:
       - player-wrapper
       - nginx
@@ -15,6 +12,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
+    command: liquidsoap /home/liquidsoap/app/shoutzor.liq
   player-wrapper:
     build: .
     depends_on:
@@ -22,7 +20,7 @@ services:
     networks:
       - backend
     volumes:
-      - '.\player:/home/liquidsoap/app'
+      - './player:/home/liquidsoap/app'
     deploy:
       restart_policy:
         condition: on-failure
@@ -41,7 +39,7 @@ services:
       - ICECAST_ADMIN_USERNAME=admin
       - ICECAST_ADMIN_EMAIL=noreply@example.org
       - ICECAST_LOCATION=the internet
-      - ICECAST_HOSTNAME=shoutzor.lan
+      - ICECAST_HOSTNAME=0.0.0.0
       - ICECAST_MAX_CLIENTS=9001
       - ICECAST_MAX_SOURCES=100
     deploy:
